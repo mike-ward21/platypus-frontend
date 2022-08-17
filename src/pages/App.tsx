@@ -1,0 +1,220 @@
+import { Credentials, StringTranslations } from '@crowdin/crowdin-api-client'
+import React, { Suspense, useEffect, useState, useContext } from 'react'
+import { HashRouter, Route, Switch } from 'react-router-dom'
+import styled,{useTheme} from 'styled-components'
+// import Menu from '../components/Menu'
+import MyMenu from '../components/MyMenu'
+import Footer from '../components/Footer'
+// import VersionBar from '../components/VersionBar'
+import Popups from '../components/Popups'
+import Web3ReactManager from '../components/Web3ReactManager'
+import { allLanguages, EN } from '../constants/localisation/languageCodes'
+import { LanguageContext } from '../hooks/LanguageContext'
+import { TranslationsContext } from '../hooks/TranslationsContext'
+import Pool from './Pool'
+import Staking from './Staking'
+import Swap from './Swap'
+import Home from './Home/index'
+import PoolFinder from './PoolFinder'
+
+
+const AppWrapper = styled.div`
+  display: flex;
+  flex-flow: column;
+  align-items: flex-start;
+  overflow-x: hidden;
+`
+const MyBodyWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  
+  align-items: center;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  z-index: 1;
+  
+  // background-image: url('/images/group-pancake.svg');
+  // background-repeat: no-repeat;
+  // background-position: bottom 24px center;
+  // background-size: 90%;
+
+  ${({ theme }) => theme.mediaQueries.xs} {
+    background-size: auto;
+  }
+
+  ${({ theme }) => theme.mediaQueries.lg} {
+    // background-image: url('/images/arch-${({ theme }) => (theme.isDark ? 'dark' : 'light')}.svg'),
+    //   url('/images/left-pancake.svg'), url('/images/right-pancake.svg');
+    // background-repeat: no-repeat;
+    // background-position: center 420px, 10% 230px, 90% 230px;
+    // background-size: contain, 266px, 266px;
+    min-height: 90vh;
+  }
+`
+
+const BodyWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 32px 16px;
+  align-items: center;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  z-index: 1;
+  justify-content: center;
+  // background-image: url('/images/group-pancake.svg');
+  // background-repeat: no-repeat;
+  // background-position: bottom 24px center;
+  // background-size: 90%;
+
+  ${({ theme }) => theme.mediaQueries.xs} {
+    background-size: auto;
+  }
+
+  ${({ theme }) => theme.mediaQueries.lg} {
+    // background-image: url('/images/arch-${({ theme }) => (theme.isDark ? 'dark' : 'light')}.svg'),
+    //   url('/images/left-pancake.svg'), url('/images/right-pancake.svg');
+    // background-repeat: no-repeat;
+    // background-position: center 420px, 10% 230px, 90% 230px;
+    // background-size: contain, 266px, 266px;
+    min-height: 90vh;
+  }
+`
+
+const Marginer = styled.div`
+  margin-top: 5rem;
+`
+
+export default function App() {
+  const [selectedLanguage, setSelectedLanguage] = useState<any>(undefined)
+  const [translatedLanguage, setTranslatedLanguage] = useState<any>(undefined)
+  const [translations, setTranslations] = useState<Array<any>>([])
+  const apiKey = `${process.env.REACT_APP_CROWDIN_APIKEY}`
+  const projectId = parseInt(`${process.env.REACT_APP_CROWDIN_PROJECTID}`)
+  const fileId = 6
+
+  const credentials: Credentials = {
+    token: apiKey,
+  }
+
+
+  const theme = useTheme()
+  // overriding the theme default functionalties
+ theme.colors.inputBorder = "#70f5E5"
+ theme.colors.background = "#00172b"
+ theme.colors.text = "#70F5E5"
+ theme.colors.primary = "#70F5E5"
+ theme.colors.textSubtle = "#FF5EE3"
+
+
+ theme.button.primary.background = "#70f5e500"
+//  theme.button.primary.color = "#00172B"
+ theme.button.primary.color = "#70f5E5"
+ theme.button.primary.boxShadow="inset 0px -1px 0px rgba(0, 0, 0, 0.3)"
+//  theme.button.primary.border="0"
+ theme.button.primary.border="3px solid #70f5E5"
+
+
+
+ 
+ theme.button.secondary.border="3px solid #70f5E5"
+ theme.button.secondary.color = "#70F5E5"
+//  theme.button.secondary.backgroundHover="#FF5EE3"
+
+
+
+
+ theme.button.subtle.background="#FF5EE300"
+ theme.button.subtle.border="3px solid #70F5E5"
+ theme.button.subtle.backgroundActive="#FF5EE3"
+ theme.button.subtle.backgroundHover="#FF5EE3"
+ theme.button.subtle.color="#70F5E5 !important"
+
+ theme.button.tertiary.color="#70f5E5 !important"
+
+ theme.button.text.color="#FF5EE3"
+
+
+theme.colors.primaryDark="#FF5EE3"
+theme.colors.input = "#002CAA"
+
+
+
+
+  console.log(theme)
+
+  const stringTranslationsApi = new StringTranslations(credentials)
+
+  const getStoredLang = (storedLangCode: string) => {
+    return allLanguages.filter((language) => {
+      return language.code === storedLangCode
+    })[0]
+  }
+
+  useEffect(() => {
+    const storedLangCode = localStorage.getItem('pancakeSwapLanguage')
+    if (storedLangCode) {
+      const storedLang = getStoredLang(storedLangCode)
+      setSelectedLanguage(storedLang)
+    } else {
+      setSelectedLanguage(EN)
+    }
+  }, [])
+
+  const fetchTranslationsForSelectedLanguage = async () => {
+    stringTranslationsApi
+      .listLanguageTranslations(projectId, selectedLanguage.code, undefined, fileId, 200)
+      .then((translationApiResponse) => {
+        if (translationApiResponse.data.length < 1) {
+          setTranslations(['error'])
+        } else {
+          setTranslations(translationApiResponse.data)
+        }
+      })
+      .then(() => setTranslatedLanguage(selectedLanguage))
+      .catch((error) => {
+        setTranslations(['error'])
+        console.error(error)
+      })
+  }
+
+  useEffect(() => {
+    if (selectedLanguage) {
+      fetchTranslationsForSelectedLanguage()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedLanguage])
+
+  return (
+    <Suspense fallback={null}>
+      <HashRouter>
+        <AppWrapper>
+          <LanguageContext.Provider
+            value={{ selectedLanguage, setSelectedLanguage, translatedLanguage, setTranslatedLanguage }}
+          >
+            <TranslationsContext.Provider value={{ translations, setTranslations }}>
+              <MyMenu />
+              <MyBodyWrapper>
+                <Popups />
+                <Web3ReactManager>
+                  <Switch>
+                    <Route exact strict path="/" component={Home} />
+                    <Route exact strict path="/swap" component={Swap} />
+                    <Route exact strict path="/pool" component={Pool} />
+                    <Route exact strict path="/veptp" component={Staking} />
+                  </Switch>
+                </Web3ReactManager>
+                <Marginer />
+                
+              </MyBodyWrapper>
+              <Footer />
+            </TranslationsContext.Provider>
+          </LanguageContext.Provider>
+        </AppWrapper>
+      </HashRouter>
+    </Suspense>    
+  )
+}
